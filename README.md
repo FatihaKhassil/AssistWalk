@@ -127,10 +127,6 @@ outdoor environments).
 
 ---
 
-## Quick Start with Docker
-
-The entire stack (database, backend, AI microservices, web frontend, and gateway)
-is containerized and runs with a single command.
 
 ### 1. Configure environment variables
 
