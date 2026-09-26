@@ -1,58 +1,66 @@
 # AssistWalk
 
-**Plateforme intelligente d'assistance à la mobilité pour personnes malvoyantes**
+**Smart mobility assistance platform for visually impaired people**
 
-AssistWalk combine vision par ordinateur, reconnaissance de texte et communication temps réel pour aider les personnes malvoyantes à se déplacer en autonomie, tout en gardant leurs accompagnateurs informés en cas de besoin.
+AssistWalk combines computer vision, text recognition, and real-time communication to
+help visually impaired people move around independently, while keeping their
+companions informed whenever needed.
 
 ---
 
-## Sommaire
+## Table of Contents
 
-- [Aperçu du projet](#aperçu-du-projet)
-- [Fonctionnalités principales](#fonctionnalités-principales)
+- [Project Overview](#project-overview)
+- [Key Features](#key-features)
 - [Architecture](#architecture)
-- [Stack technique](#stack-technique)
-- [Modèle IA — Fine-tuning YOLOv8](#modèle-ia--fine-tuning-yolov8)
-- [Prérequis](#prérequis)
-- [Démarrage rapide avec Docker](#démarrage-rapide-avec-docker)
-- [Démarrage en développement local](#démarrage-en-développement-local)
-- [Variables d'environnement](#variables-denvironnement)
-- [Structure du projet](#structure-du-projet)
-- [Documentation API](#documentation-api)
-- [Licence](#licence)
+- [Tech Stack](#tech-stack)
+- [AI Model — YOLOv8 Fine-tuning](#ai-model--yolov8-fine-tuning)
+- [Prerequisites](#prerequisites)
+- [Quick Start with Docker](#quick-start-with-docker)
+- [Local Development Setup](#local-development-setup)
+- [Environment Variables](#environment-variables)
+- [Project Structure](#project-structure)
+- [API Documentation](#api-documentation)
+- [License](#license)
+- [Authors](#authors)
 
 ---
 
-## Aperçu du projet
+## Project Overview
 
-Les personnes malvoyantes font face à des difficultés quotidiennes pour détecter les obstacles, lire des documents ou alerter rapidement un proche en cas de danger. AssistWalk propose une réponse complète à ces problématiques à travers trois interfaces complémentaires :
+Visually impaired people face daily challenges detecting obstacles, reading documents,
+or quickly alerting a relative in case of danger. AssistWalk addresses these
+challenges through three complementary interfaces:
 
-- une **application mobile** (Flutter) pour la personne malvoyante : détection d'obstacles en temps réel, lecture de texte (OCR) et déclenchement d'alertes SOS ;
-- un **dashboard web** (React) pour les accompagnateurs : suivi en temps réel sur carte, réception des alertes ;
-- un **espace d'administration** (React) : gestion des utilisateurs, des associations et des tickets de support.
+- a **mobile app** (Flutter) for the visually impaired user: real-time obstacle
+  detection, text reading (OCR), and SOS alert triggering;
+- a **web dashboard** (React) for companions: real-time map tracking and alert
+  reception;
+- an **admin panel** (React): user management, associations, and support tickets.
 
 ---
 
-## Fonctionnalités principales
+## Key Features
 
-| Fonctionnalité | Description |
+| Feature | Description |
 |---|---|
-| Détection d'obstacles | Modèle YOLOv8 fine-tuné, exécuté en temps réel sur le flux caméra |
-| Reconnaissance de texte (OCR) | Lecture de documents et panneaux via Tesseract, EasyOCR et Groq Vision API |
-| Alertes SOS | Notification instantanée de l'accompagnateur via WebSocket, push FCM et email |
-| Suivi en temps réel | Géolocalisation affichée sur carte côté accompagnateur |
-| Gestion des comptes | Authentification JWT, rôles (malvoyant / accompagnateur / administrateur), mot de passe temporaire à la création |
-| Support utilisateur | Système de tickets intégré entre accompagnateurs et administrateurs |
+| Obstacle detection | Fine-tuned YOLOv8 model, running in real time on the camera feed |
+| Text recognition (OCR) | Reads documents and signs via Tesseract, EasyOCR, and Groq Vision API |
+| SOS alerts | Instant notification to the companion via WebSocket, FCM push, and email |
+| Real-time tracking | Geolocation displayed on a map on the companion's side |
+| Account management | JWT authentication, roles (visually impaired / companion / admin), temporary password on account creation |
+| User support | Built-in ticketing system between companions and administrators |
 
 ---
 
 ## Architecture
 
-AssistWalk repose sur une architecture en microservices conteneurisés, exposés derrière une passerelle Nginx unique :
+AssistWalk is built on a containerized microservices architecture, all exposed
+behind a single Nginx gateway:
 
 ```
                          ┌────────────────────────────────────────┐
-   Mobile / Navigateur ─▶│        Gateway Nginx (port 80)          │
+   Mobile / Browser ────▶│        Nginx Gateway (port 80)          │
                          └───────────────┬──────────────────────────┘
                                          │
         ┌───────────────┬───────────────┼───────────────┐
@@ -68,170 +76,185 @@ AssistWalk repose sur une architecture en microservices conteneurisés, exposés
                                                        └─────────────┘
 ```
 
-Le gateway Nginx constitue le **point d'entrée unique** du système : il route chaque requête vers le microservice concerné en fonction du préfixe de chemin (`/api`, `/auth`, `/navigation`, `/ocr`, `/ws`), simplifiant ainsi la configuration côté client (mobile et web) qui n'a besoin de connaître qu'une seule adresse.
+The Nginx gateway is the system's **single entry point**: it routes each request to
+the right microservice based on the path prefix (`/api`, `/auth`, `/navigation`,
+`/ocr`, `/ws`), which keeps client-side configuration (mobile and web) simple since
+they only need to know one address.
 
-| Service | Technologie | Rôle |
+| Service | Technology | Role |
 |---|---|---|
-| `gateway` | Nginx | Reverse proxy, point d'entrée unique |
-| `web` | React + Vite | Dashboard accompagnateur / administration |
-| `backend` | Spring Boot | API principale : auth, utilisateurs, alertes, WebSocket |
-| `backend-navigation` | Flask + YOLOv8 | Détection d'obstacles en temps réel |
-| `ocr-service` | FastAPI | Reconnaissance de texte (OCR) |
-| `postgres` | PostgreSQL 16 | Base de données relationnelle |
+| `gateway` | Nginx | Reverse proxy, single entry point |
+| `web` | React + Vite | Companion / admin dashboard |
+| `backend` | Spring Boot | Core API: auth, users, alerts, WebSocket |
+| `backend-navigation` | Flask + YOLOv8 | Real-time obstacle detection |
+| `ocr-service` | FastAPI | Text recognition (OCR) |
+| `postgres` | PostgreSQL 16 | Relational database |
 
 ---
 
-## Stack technique
+## Tech Stack
 
 **Backend** — Spring Boot, PostgreSQL, JWT, WebSocket (STOMP)
-**Intelligence artificielle** — YOLOv8 (Ultralytics), Flask, OpenCV, FastAPI, Tesseract OCR, EasyOCR, Groq Vision API
-**Frontend web** — React, Vite
+**AI** — YOLOv8 (Ultralytics), Flask, OpenCV, FastAPI, Tesseract OCR, EasyOCR, Groq Vision API
+**Web frontend** — React, Vite
 **Mobile** — Flutter
 **Infrastructure** — Docker, Docker Compose, Nginx
-**Outils** — Git/GitHub, Postman, draw.io
+**Tools** — Git/GitHub, Postman, draw.io
 
 ---
 
-## Modèle IA — Fine-tuning YOLOv8
+## AI Model — YOLOv8 Fine-tuning
 
-Le modèle de détection d'obstacles utilisé par le service `backend-navigation` est un **YOLOv8 fine-tuné** sur un jeu de données personnalisé, ciblant des classes d'obstacles pertinentes pour la mobilité d'une personne malvoyante, notamment :
+The obstacle detection model used by the `backend-navigation` service is a
+**fine-tuned YOLOv8**, trained on a custom dataset targeting obstacle classes
+relevant to visually impaired mobility, including:
 
-- **escaliers** (`stairs`)
-- **portes** (`doors`)
-- obstacles urbains complémentaires
+- **stairs**
+- **doors**
+- additional urban obstacles
 
-Le fine-tuning a permis d'améliorer significativement la précision de détection sur ces classes spécifiques par rapport au modèle YOLOv8 pré-entraîné de base, mieux adapté aux contraintes réelles d'usage (angles de vue bas, conditions de luminosité variables, environnements intérieurs et extérieurs).
-
----
-
-## Prérequis
-
-- [Docker](https://www.docker.com/) et Docker Compose
-- [Flutter](https://flutter.dev/) 3.x (pour l'application mobile)
-- Java 17 et Python 3.11 (uniquement requis en développement local sans Docker)
+Fine-tuning significantly improved detection accuracy on these specific classes
+compared to the base pre-trained YOLOv8 model, better adapting it to real-world
+usage constraints (low viewing angles, variable lighting conditions, indoor and
+outdoor environments).
 
 ---
 
-## Démarrage rapide avec Docker
+## Prerequisites
 
-L'ensemble de la stack (base de données, backend, microservices IA, frontend web et gateway) est conteneurisé et s'exécute avec une seule commande.
+- [Docker](https://www.docker.com/) and Docker Compose
+- [Flutter](https://flutter.dev/) 3.x (for the mobile app)
+- Java 17 and Python 3.11 (only required for local development without Docker)
 
-### 1. Configuration des variables d'environnement
+---
+
+## Quick Start with Docker
+
+The entire stack (database, backend, AI microservices, web frontend, and gateway)
+is containerized and runs with a single command.
+
+### 1. Configure environment variables
 
 ```bash
 cp .env.example .env
 cp ocr/.env.example ocr/.env
 ```
 
-Éditez `.env` et `ocr/.env` afin de renseigner vos identifiants (base de données, secret JWT, clé API Groq, etc.).
+Edit `.env` and `ocr/.env` to fill in your credentials (database, JWT secret, Groq
+API key, etc.).
 
-### 2. Lancement de la stack complète
+### 2. Start the full stack
 
 ```bash
 cd docker
 docker compose up -d --build
 ```
 
-### 3. Vérification
+### 3. Verify
 
 ```bash
 docker compose ps
 ```
 
-Tous les conteneurs doivent afficher un statut `running` (et `healthy` pour `postgres` et `gateway`).
+All containers should show a `running` status (and `healthy` for `postgres` and
+`gateway`).
 
-### Accès aux services
+### Accessing the services
 
 | Service | URL |
 |---|---|
-| Application web | http://localhost (via le gateway) |
-| API Backend | http://localhost/api |
-| Service OCR | http://localhost/ocr |
-| Service Navigation | http://localhost/navigation |
+| Web app | http://localhost (via the gateway) |
+| Backend API | http://localhost/api |
+| OCR service | http://localhost/ocr |
+| Navigation service | http://localhost/navigation |
 
-> En accès direct (sans passer par le gateway), les services restent également exposés sur leurs ports respectifs : `web` (3000), `backend` (8081), `ocr-service` (8000), `backend-navigation` (5001), `postgres` (5432).
+> Services are also exposed directly on their respective ports (bypassing the
+> gateway): `web` (3000), `backend` (8081), `ocr-service` (8000),
+> `backend-navigation` (5001), `postgres` (5432).
 
-### Arrêt de la stack
+### Stopping the stack
 
 ```bash
 docker compose down
 ```
 
-Pour supprimer également les volumes (réinitialisation complète de la base de données) :
+To also remove volumes (full database reset):
 
 ```bash
 docker compose down -v
 ```
 
-### Lancement de l'application mobile
+### Running the mobile app
 
 ```bash
 cd mobile
 flutter pub get
-flutter run --dart-define=GATEWAY_HOST=<IP_DE_VOTRE_MACHINE>
+flutter run --dart-define=GATEWAY_HOST=<YOUR_MACHINE_IP>
 ```
 
-Remplacez `<IP_DE_VOTRE_MACHINE>` par l'adresse IP locale de la machine exécutant `docker compose` (le téléphone et l'ordinateur doivent être connectés au même réseau).
+Replace `<YOUR_MACHINE_IP>` with the local IP address of the machine running
+`docker compose` (the phone and the computer must be on the same network).
 
 ---
 
-## Démarrage en développement local
+## Local Development Setup
 
-Pour le développement actif du backend sans reconstruire l'image Docker à chaque modification :
+For active backend development without rebuilding the Docker image on every change:
 
 ```bash
-# 1. Variables d'environnement
+# 1. Environment variables
 cp .env.example .env
 
-# 2. Démarrer uniquement la base de données et les microservices IA
+# 2. Start only the database and AI microservices
 cd docker
 docker compose up -d postgres ocr-service backend-navigation
 
-# 3. Lancer le backend en local
+# 3. Run the backend locally
 cd ../backend
 ./mvnw spring-boot:run
 
-# 4. Lancer le frontend web en local
+# 4. Run the web frontend locally
 cd ../web
 npm install
 npm run dev
 
-# 5. Lancer l'application mobile
+# 5. Run the mobile app
 cd ../mobile
 flutter run
 ```
 
 ---
 
-## Variables d'environnement
+## Environment Variables
 
-| Variable | Description | Exemple |
+| Variable | Description | Example |
 |---|---|---|
-| `POSTGRES_DB` | Nom de la base de données | `assistwalk` |
-| `POSTGRES_USER` | Utilisateur PostgreSQL | `assistwalk_user` |
-| `POSTGRES_PASSWORD` | Mot de passe PostgreSQL | — |
-| `JWT_SECRET` | Clé secrète de signature des jetons JWT | — |
-| `JWT_EXPIRATION_MS` | Durée de validité du token (session normale) | `28800000` (8h) |
-| `JWT_EXPIRATION_REMEMBER_MS` | Durée de validité du token ("rester connecté") | `2592000000` (30j) |
-| `FRONTEND_URL` | URL du frontend, utilisée pour les liens dans les emails | `http://localhost` |
-| `OCR_SERVICE_URL` | URL interne du service OCR (résolue automatiquement en Docker) | `http://ocr-service:8000` |
+| `POSTGRES_DB` | Database name | `assistwalk` |
+| `POSTGRES_USER` | PostgreSQL user | `assistwalk_user` |
+| `POSTGRES_PASSWORD` | PostgreSQL password | — |
+| `JWT_SECRET` | JWT signing secret key | — |
+| `JWT_EXPIRATION_MS` | Token validity duration (regular session) | `28800000` (8h) |
+| `JWT_EXPIRATION_REMEMBER_MS` | Token validity duration ("remember me") | `2592000000` (30d) |
+| `FRONTEND_URL` | Frontend URL, used for links in emails | `http://localhost` |
+| `OCR_SERVICE_URL` | Internal OCR service URL (auto-resolved in Docker) | `http://ocr-service:8000` |
 
-Le détail complet des variables requises pour le service OCR (clé API Groq, etc.) figure dans `ocr/.env.example`.
+Full details of the variables required by the OCR service (Groq API key, etc.) are
+listed in `ocr/.env.example`.
 
 ---
 
-## Structure du projet
+## Project Structure
 
 ```
 assistwalk/
-├── backend/                # API principale — Spring Boot
-├── backend-navigation/     # Détection d'obstacles — Flask + YOLOv8
-├── ocr/                    # Reconnaissance de texte — FastAPI
-├── web/                    # Dashboard accompagnateur / admin — React
-├── mobile/                 # Application mobile — Flutter
+├── backend/                # Core API — Spring Boot
+├── backend-navigation/     # Obstacle detection — Flask + YOLOv8
+├── ocr/                    # Text recognition — FastAPI
+├── web/                    # Companion / admin dashboard — React
+├── mobile/                 # Mobile app — Flutter
 ├── docker/
 │   ├── docker-compose.yml
-│   └── gateway/             # Configuration du reverse proxy Nginx
+│   └── gateway/             # Nginx reverse proxy configuration
 ├── docs/
 │   └── api.md
 ├── .env.example
@@ -240,12 +263,21 @@ assistwalk/
 
 ---
 
-## Documentation API
+## API Documentation
 
-La documentation détaillée des endpoints de l'API est disponible dans [docs/api.md](docs/api.md).
+Detailed API endpoint documentation is available in [docs/api.md](docs/api.md).
 
 ---
 
-## Licence
+## License
 
-Projet développé dans le cadre d'un projet de fin d'annee au sein de ENSIAS.
+Project developed as part of a final-year project (PFA) at ENSIAS.
+
+---
+
+## Authors
+
+This project was developed by **Fatiha Khassil** and **Oumaima Lahkiar**, students
+at **ENSIAS**.
+
+- Supervised by: **Mrs. Widad Elouataoui**
