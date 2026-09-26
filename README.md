@@ -49,7 +49,6 @@ challenges through three complementary interfaces:
 | SOS alerts | Instant notification to the companion via WebSocket, FCM push, and email |
 | Real-time tracking | Geolocation displayed on a map on the companion's side |
 | Account management | JWT authentication, roles (visually impaired / companion / admin), temporary password on account creation |
-| User support | Built-in ticketing system between companions and administrators |
 
 ---
 
